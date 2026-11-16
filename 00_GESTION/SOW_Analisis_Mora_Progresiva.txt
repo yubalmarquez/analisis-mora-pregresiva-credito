@@ -56,9 +56,7 @@ Incluye:
   - Restricciones clave del análisis (resumidas, no técnicas)
   - Recomendaciones concretas por segmento
 - Conexión Power BI <- PostgreSQL: manual vía exportación/carga 
-  de CSV (no DirectQuery), documentada en README para 
-  trazabilidad y para facilitar el traspaso a otro analista 
-  si es necesario
+  de CSV (no DirectQuery).
 
 Fuera de alcance (se podría hacer, pero no en esta versión):
 - Análisis de tendencia más granular mes a mes (más allá de 
