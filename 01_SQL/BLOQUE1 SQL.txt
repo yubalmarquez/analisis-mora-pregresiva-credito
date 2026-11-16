@@ -1,0 +1,60 @@
+SELECT * FROM default_of_credits_cards
+SELECT COUNT(*) FROM default_of_credits_cards
+/* Primeramente justo despues de cargar los datos revisare
+si existe algun duplicado en la tabla */
+
+SELECT "ID" 
+FROM (
+SELECT *, 
+ROW_NUMBER() OVER ( 
+PARTITION BY "LIMIT_BAL", "SEX", "EDUCATION", "MARRIAGE", "AGE", "PAY_0", "PAY_2", "PAY_3", 
+"PAY_4", "PAY_5", "PAY_6", "BILL_AMT1", "BILL_AMT2", "BILL_AMT3", "BILL_AMT4", "BILL_AMT5", 
+"BILL_AMT6", "PAY_AMT1", "PAY_AMT2", "PAY_AMT3", "PAY_AMT4", "PAY_AMT5", "PAY_AMT6", 
+"default_payment_next_month"
+ORDER BY "ID"
+) AS rn
+FROM default_of_credits_cards
+) sub 
+WHERE rn > 1;
+
+/* Se detectaron 35 clientes que tienen datos "duplicados"  sin que tengan el mismo id, aun que sea poco plausible que distintos clientes tengan exactamente los mismos datos que otro revisare mas adelante si estos clientes aparecen en la futura segmentacion y en ese momento tomare la decision de que hacer con ellos. IDs : 1981, 4586, 6023, 6467, 7320, 8321, 10251, 13107, 14295, 15459, 15618, 15686, 17033, 19115, 19488, 19605, 19898, 20876, 21882, 22163, 23878, 24123, 25609, 26250, 26806, 27352, 27766, 27929, 27967, 28229, 28780, 28984, 29266, 29824, 29910.
+seguire con la revision de nulos */
+
+SELECT * FROM default_of_credits_cards
+WHERE "ID" IS NULL OR "LIMIT_BAL" IS NULL OR "SEX" IS NULL OR "EDUCATION" IS NULL OR "MARRIAGE" IS NULL OR "AGE" IS NULL OR "PAY_0" IS NULL OR "PAY_2" IS NULL OR "PAY_3" IS NULL OR 
+"PAY_4" IS NULL OR "PAY_5" IS NULL OR "PAY_6" IS NULL OR "BILL_AMT1" IS NULL OR "BILL_AMT2" IS NULL OR "BILL_AMT3" IS NULL OR "BILL_AMT4" IS NULL OR "BILL_AMT5" IS NULL OR 
+"BILL_AMT6" IS NULL OR "PAY_AMT1" IS NULL OR "PAY_AMT2" IS NULL OR "PAY_AMT3" IS NULL OR "PAY_AMT4" IS NULL OR "PAY_AMT5" IS NULL OR "PAY_AMT6" IS NULL OR 
+"default_payment_next_month" IS NULL
+
+/* confirmando que no existen nulos revisare que los tipos de datos
+se hayan cargado en el formato correcto */
+
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'default_of_credits_cards'
+
+/* todos los datos estan cargados correctamente con los valores
+esperados  por lo que lo ultimo que me queda hoy  sera el validar
+los rangos de las columnas clave */
+/* Definire las columnas clave como:
+id, limit_bal, sex, age, pay_0, pay_2, pay_3, pay_4, pay_5, pay_6  para confirmacion al finalizar el analisis
+se dejan afuera el resto de columnas por la baja utilidad para el analisis 
+y el posterior equipo de cobranza */
+
+SELECT MIN("ID"), COUNT(DISTINCT "ID"), COUNT(*) FROM default_of_credits_cards;
+SELECT MIN("AGE"), MAX("AGE"), AVG("AGE") FROM default_of_credits_cards;
+SELECT MIN("LIMIT_BAL"), MAX("LIMIT_BAL"), AVG("LIMIT_BAL") FROM default_of_credits_cards;
+SELECT "SEX", COUNT(*) FROM default_of_credits_cards GROUP BY "SEX" ORDER BY "SEX";
+SELECT "PAY_0", COUNT(*) FROM default_of_credits_cards GROUP BY "PAY_0" ORDER BY "PAY_0";
+SELECT "PAY_2", COUNT(*) FROM default_of_credits_cards GROUP BY "PAY_2" ORDER BY "PAY_2";
+SELECT "PAY_3", COUNT(*) FROM default_of_credits_cards GROUP BY "PAY_3" ORDER BY "PAY_3";
+SELECT "PAY_4", COUNT(*) FROM default_of_credits_cards GROUP BY "PAY_4" ORDER BY "PAY_4";
+SELECT "PAY_5", COUNT(*) FROM default_of_credits_cards GROUP BY "PAY_5" ORDER BY "PAY_5";
+SELECT "PAY_6", COUNT(*) FROM default_of_credits_cards GROUP BY "PAY_6" ORDER BY "PAY_6";
+
+
+/* al correr las consultas todos los datos estan en orden, 30000 id sin repetirse 
+edad de un minimo de 21 y maximo de 79, todos los pay_X con valores entre los -2 y 8  y un limit_bal de  entre 10000 y 1000000, 
+con esto terminado doy por concluido el bloque 1, como era de esperarse de este dataset todos los datos 
+que competen a este analisis estan limpios, sin nulos y con los rangos 
+supuestos */

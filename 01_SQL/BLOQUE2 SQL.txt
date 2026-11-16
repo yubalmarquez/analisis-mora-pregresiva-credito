@@ -1,0 +1,49 @@
+WITH cte AS
+ (SELECT "ID", "LIMIT_BAL", "AGE",
+  CASE WHEN "PAY_0" <= 0 THEN 0 ELSE 1 END AS pago_0,
+ CASE WHEN "PAY_2" <= 0 THEN 0 ELSE 1 END AS pago_2,
+  CASE WHEN "PAY_3" <= 0 THEN 0 ELSE 1 END AS pago_3, 
+  CASE WHEN "PAY_4" <= 0 THEN 0 ELSE 1 END AS pago_4, 
+  CASE WHEN "PAY_5" <= 0 THEN 0 ELSE 1 END AS pago_5,
+  CASE WHEN "PAY_6" <= 0 THEN 0 ELSE 1 END AS pago_6
+  FROM default_of_credits_cards),
+
+cte2 AS (SELECT dcc."ID", dcc."BILL_AMT1" AS DEUDA_ACTUAL, dcc."LIMIT_BAL", dcc."AGE",
+ dcc."PAY_0", dcc."PAY_2", dcc."PAY_3", dcc."PAY_4", dcc."PAY_5", dcc."PAY_6",
+ (ct."pago_0" + ct."pago_2" + ct."pago_3" + ct."pago_4" + ct."pago_5" + ct."pago_6") AS SUMA_ATRASOS
+ FROM default_of_credits_cards AS dcc 
+ JOIN cte AS ct 
+ ON ct."ID" = dcc."ID") ,
+ 
+SEGMENTOS AS ( SELECT * ,  
+ CASE WHEN "PAY_0" > 0
+ AND "PAY_2" > 0 
+ AND "PAY_3" > 0 
+ THEN 'Deterioro_activo' 
+ WHEN "PAY_4" > 0
+  AND "PAY_5" > 0 
+  AND "PAY_6" > 0
+ AND "PAY_0" <= 0
+  AND "PAY_2" <= 0
+  AND "PAY_3" <= 0 
+ THEN 'Recuperado'
+ ELSE 'Intermitente' 
+ END AS segmento   FROM  cte2 )
+SELECT * FROM SEGMENTOS
+WHERE SUMA_ATRASOS >= 3 
+AND "ID" IN (
+    14295, 10251, 17033, 19115, 27766,
+    28984, 26250, 19898, 19605, 24123,
+    4586, 1981, 27929, 15459, 21882,
+    29266, 19488, 23878, 28229, 28780,
+    15618, 27352, 6023, 6467, 29824,
+    20876, 26806, 15686, 29910, 8321,
+    25609, 13107, 27967, 22163, 7320
+)
+ORDER BY "ID";
+
+/* ELEl codigo se ejecuta en primer lugar hasta : END AS segmento   FROM  cte2 )
+SELECT * FROM SEGMENTOS
+WHERE SUMA_ATRASOS >= 3
+Despues se ejecuta una segunda vez al completo, el unic id que se "repite" es el 
+14295 y lo conservare para la revision en power bi */

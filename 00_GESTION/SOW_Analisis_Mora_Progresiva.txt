@@ -1,0 +1,156 @@
+
+
+
+==================================================
+SOW - Análisis de Mora Progresiva - Banca/Cobranza
+==================================================
+
+1. CONTEXTO / OBJETIVO
+-------------------------
+Pregunta del stakeholder (gerente de cobranza):
+"Necesito saber qué clientes están entrando en mora progresiva. 
+Quiero ver su comportamiento de pago en los últimos 6 meses, no 
+solo el mes actual, para detectar deterioro antes de que lleguen 
+a default."
+
+Definición de negocio:
+- Mora progresiva = cliente con 3 o más meses de atraso 
+  (PAY_X >= 1) dentro de los últimos 6 meses (PAY_0 a PAY_6)
+- Default = cliente con mora continua donde la cuenta se cierra 
+  por morosidad (variable objetivo del dataset)
+
+Regla de transformación:
+- PAY_X <= 0  -> atraso_mes = 0 (sin consumo, pago a tiempo, o 
+  zona ambigua de uso revolvente)
+- PAY_X >= 1  -> atraso_mes = 1 (atraso confirmado)
+- meses_en_atraso = SUMA(atraso_mes) de PAY_0 a PAY_6
+- cliente_riesgoso = SI, si meses_en_atraso >= 3
+
+Objetivo formal:
+Identificar y segmentar a clientes que entraron en mora 3 de 
+los últimos 6 meses, repartidos en tres segmentos:
+- DETERIORO ACTIVO: atraso en los últimos 3 meses 
+  (PAY_0, PAY_2, PAY_3) -> prioridad alta
+- RECUPERADO: atraso en meses antiguos, últimos 3 al día 
+  -> prioridad baja
+- INTERMITENTE/VARIABLE: mezcla que no cae claramente en 
+  ninguno de los 2 anteriores -> prioridad media, revisar 
+  más detenidamente
+
+
+2. ALCANCE
+-------------------------
+Incluye:
+- Limpieza y transformación completa de datos en PostgreSQL:
+  - Manejo de nulos/duplicados
+  - Transformación PAY_X -> atraso_mes -> meses_en_atraso
+  - Clasificación de segmento_riesgo (deterioro activo / 
+    recuperado / intermitente) vía SQL
+  - PostgreSQL es la fuente única de verdad para el análisis
+- Entregable en Excel: 3 hojas separadas por segmento 
+  (deterioro activo, intermitente, recuperado), exportadas 
+  desde PostgreSQL, para uso directo del equipo de cobranza
+- Entregable en Power BI: presentación orientada a acción con:
+  - Título del problema
+  - Los 3 segmentos de clientes y su perfil de comportamiento
+  - Restricciones clave del análisis (resumidas, no técnicas)
+  - Recomendaciones concretas por segmento
+- Conexión Power BI <- PostgreSQL: manual vía exportación/carga 
+  de CSV (no DirectQuery), documentada en README para 
+  trazabilidad y para facilitar el traspaso a otro analista 
+  si es necesario
+
+Fuera de alcance (se podría hacer, pero no en esta versión):
+- Análisis de tendencia más granular mes a mes (más allá de 
+  la clasificación en 3 segmentos)
+- Ampliar el análisis a más de 6 meses de historial
+- Conexión automatizada/DirectQuery entre PostgreSQL y Power BI
+
+
+3. ENTREGABLES
+-------------------------
+1. Script(s) SQL de limpieza y transformación 
+   (nulos, duplicados, PAY_X -> atraso_mes -> segmento_riesgo)
+2. Tabla final en PostgreSQL con columna segmento_riesgo 
+   (deterioro_activo / recuperado / intermitente)
+3. Archivo Excel con 3 hojas (una por segmento) para uso 
+   directo del equipo de cobranza
+4. Presentación en Power BI con:
+   - Título del problema
+   - Perfil y comportamiento de cada segmento
+   - Restricciones del análisis (resumidas, no técnicas)
+   - Recomendaciones de acción por segmento 
+     [PENDIENTE: a definir en fase de Analyze, una vez visto 
+     el tamaño real y comportamiento de cada segmento en los 
+     datos. No se define en la etapa de SOW por falta de 
+     evidencia empírica]
+5. README de documentación técnica (decisiones de limpieza, 
+   definición de reglas de negocio, pasos de carga manual a 
+   Power BI) - para portafolio propio y para un futuro 
+   analista que retome el proyecto
+
+
+4. CRONOGRAMA (por bloques/sesiones)
+-------------------------
+Disponibilidad: martes a viernes, 3-4 hrs por sesión
+
+BLOQUE 1 - Limpieza de datos (SQL)
+  - Cargar dataset a PostgreSQL (si no está ya)
+  - Revisar nulos, duplicados, tipos de dato
+  - Validar rangos de columnas clave (PAY_X, LIMIT_BAL, etc.)
+  Entregable de bloque: tabla limpia y validada en PostgreSQL
+  Estimado: 1 sesión
+
+BLOQUE 2 - Transformación y segmentación (SQL)
+  - Crear columna atraso_mes por cada PAY_X
+  - Calcular meses_en_atraso
+  - Clasificar segmento_riesgo según las reglas ya definidas
+  - Validar manualmente 5-10 casos (revisar que la lógica esté 
+    bien aplicada, no solo que el query corra sin error)
+  Entregable de bloque: tabla final con segmento_riesgo, 
+  validada
+  Estimado: 1-2 sesiones
+
+BLOQUE 3 - Exportación a Excel
+  - Exportar 3 hojas (una por segmento) desde PostgreSQL
+  - Dar formato básico legible para el equipo de cobranza
+  Entregable de bloque: archivo Excel entregable, versión 1
+  Estimado: 1 sesión
+
+BLOQUE 4 - Análisis exploratorio de segmentos (previo a Power BI)
+  - Ver tamaño de cada segmento (cuántos clientes en cada uno)
+  - Ver comportamiento promedio por segmento (deuda, edad, etc. - lo que el dataset permita)
+  - Definir recién aquí las recomendaciones de acción 
+    (pendiente marcado en Entregables)
+  Entregable de bloque: notas/hallazgos que alimentan Power BI
+  Estimado: 1 sesión
+
+BLOQUE 5 - Construcción de Power BI
+  - Carga manual de datos (CSV desde PostgreSQL)
+  - Armar las visualizaciones: perfil de segmento, 
+    restricciones, recomendaciones
+  Entregable de bloque: dashboard/presentación funcional
+  Estimado: 1-2 sesiones
+
+BLOQUE 6 - Documentación y cierre
+  - Escribir README (decisiones de limpieza, reglas de negocio, 
+    pasos de carga a Power BI)
+  - Revisión final de los 3 entregables (Excel, Power BI, SQL)
+  Entregable de bloque: proyecto completo y documentado
+  Estimado: 1 sesión
+
+Total estimado: 7-9 sesiones (~2-2.5 semanas al ritmo actual)
+
+
+5. SUPUESTOS Y RESTRICCIONES
+-------------------------
+- El dataset no contiene fecha s de calendario reales, solo 
+  posiciones relativas de mes (PAY_0 = más reciente ... PAY_6 = 
+  hace 6 meses). No es posible calcular "día exacto de pago".
+- No es posible identificar patrones de pago atado a fecha fija 
+  de sueldo (ej. cliente que siempre paga tarde pero siempre en 
+  los mismos 2 días del mes) porque no hay variable de fecha.
+- El valor PAY_X = 0 se trata como "sin atraso" por ser zona 
+  ambigua (podría ser pago mínimo o uso revolvente sin evidencia 
+  clara de mora).
+==================================================
